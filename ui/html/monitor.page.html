@@ -1,0 +1,31 @@
+{{template "base" .}}
+
+{{define "title"}}monitor{{end}}
+
+
+{{define "main"}}
+
+
+<hr>
+<table class="table table-borderless table-sm">
+  <thead>
+    <tr>
+      <th scope="col">Amp. Status</th>
+      <th scope="col">Amp. Power</th>
+    	<th scope="col">Air Temp.</th>
+      <th scope="col">Heatsink Temp.</th>
+    	<th scope="col">Door Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td scope="col" id="ampStatus">{{.AmpStatus}}</td>
+    	<td scope="col" id="ampPower">{{.AmpPower}}</td>
+    	<td scope="col" id=airTemp>{{.AirTemp}}</td>
+      <td scope="col" id=sinkTemp>{{.SinkTemp}}</td>
+    	<td scope="col" id=doorStatus>{{.DoorStatus}}</td>
+    </tr>
+  </tbody>
+</table>
+
+{{end}}
