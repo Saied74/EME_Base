@@ -2,15 +2,16 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"net"
 	"net/http"
 	"strings"
+	"syscall"
 	"time"
 
-	//	"os"
 	"path/filepath"
 	"runtime/debug"
 )
@@ -92,8 +93,8 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		Dial: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   325 * time.Millisecond,
+			KeepAlive: 325 * time.Millisecond,
 			LocalAddr: localAddress,
 		}).Dial,
 	}
@@ -105,13 +106,37 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
 	response, err := client.Get(url)
 	if err != nil {
-		if strings.HasSuffix(err.Error(), "connection reset by peer") {
+		if e, ok := err.(net.Error); ok && e.Timeout() {
 			app.errorLog.Printf("%v", err)
-			return &templateData{YesData: "false"}, nil
+			return &templateData{
+				NoConnection: "true",
+				YesData:      "false",
+				Msg:          "Connection to the head end is lost",
+			}, nil
 		}
-		if strings.HasSuffix(err.Error(), "connection refused") {
+		if errors.Is(err, syscall.EACCES) {
 			app.errorLog.Printf("%v", err)
-			return &templateData{YesData: "false"}, nil
+			return &templateData{
+				YesData:      "false",
+				NoConnection: "true",
+				Msg:          "Connection access denied",
+			}, nil
+		}
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			app.errorLog.Printf("%v", err)
+			return &templateData{
+				YesData:      "false",
+				NoConnection: "true",
+				Msg:          "Connection to the head end refused",
+			}, nil
+		}
+		if errors.Is(err, syscall.ECONNRESET) {
+			app.errorLog.Printf("%v", err)
+			return &templateData{
+				YesData:      "false",
+				NoConnection: "true",
+				Msg:          "Connection reset by the head end",
+			}, nil
 		}
 		return td, err
 	}
@@ -146,6 +171,8 @@ func (app *application) getRemote(q string) (*templateData, error) {
 			}
 		}
 		td.YesData = "true"
+		td.NoConnection = "false"
+		td.Msg = ""
 	}
 	return td, nil
 }

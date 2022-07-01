@@ -79,6 +79,7 @@ $(document).ready(function(){
   if (title == "monitor") {
     setInterval(function(){
       $.getJSON("/update-monitor").then(function(data){
+        $("#noConnection").html(data.msg);
         if (data.yesData == "true") {
           $("#ampStatus").html(data.ampStatus);
           $("#ampPower").html(data.ampPower);

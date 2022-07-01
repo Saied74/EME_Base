@@ -6,12 +6,14 @@ import (
 )
 
 type templateData struct {
-	YesData    string `json:"yesData"`
-	AmpStatus  string `json:"ampStatus"`
-	AmpPower   string `json:"ampPower"`
-	AirTemp    string `json:"airTemp"`
-	SinkTemp   string `json:"sinkTemp"`
-	DoorStatus string `json:"doorStatus"`
+	YesData      string `json:"yesData"`
+	NoConnection string `json:"noConnection"`
+	Msg          string `json:"msg"`
+	AmpStatus    string `json:"ampStatus"`
+	AmpPower     string `json:"ampPower"`
+	AirTemp      string `json:"airTemp"`
+	SinkTemp     string `json:"sinkTemp"`
+	DoorStatus   string `json:"doorStatus"`
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
