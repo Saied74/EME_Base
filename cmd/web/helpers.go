@@ -86,21 +86,24 @@ func (app *application) notFound(w http.ResponseWriter) {
 
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
-	var localAddr = "192.168.0.30"
-	localAddress, _ := net.ResolveTCPAddr("tcp", localAddr)
-
-	// Create a transport like http.DefaultTransport, but with a specified localAddr
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		Dial: (&net.Dialer{
-			Timeout:   325 * time.Millisecond,
-			KeepAlive: 325 * time.Millisecond,
-			LocalAddr: localAddress,
-		}).Dial,
-	}
-
+	// var localAddr = "192.168.0.30"
+	// localAddress, _ := net.ResolveTCPAddr("tcp", localAddr)
+	//
+	// // Create a transport like http.DefaultTransport, but with a specified localAddr
+	// transport := &http.Transport{
+	// 	Proxy: http.ProxyFromEnvironment,
+	// 	Dial: (&net.Dialer{
+	// 		Timeout:   325 * time.Millisecond,
+	// 		KeepAlive: 325 * time.Millisecond,
+	// 		LocalAddr: localAddress,
+	// 	}).Dial,
+	// }
+	//
+	// client := &http.Client{
+	// 	Transport: transport,
+	// }
 	client := &http.Client{
-		Transport: transport,
+		Timeout: 1 * time.Second,
 	}
 	//	var response *http.Response
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
