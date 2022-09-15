@@ -21,7 +21,7 @@ type application struct {
 }
 
 const (
-	remoteAddr = "192.168.0.20"
+	remoteAddr = "192.168.1.240"
 )
 
 func main() {
