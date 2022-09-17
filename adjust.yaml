@@ -1,0 +1,10 @@
+---
+   absZero: 273.15
+   calTemp: 25.0
+   calVoltage: 2.982
+   airFactor: 1.002
+   sinkFactor: 1.007
+   plusFive: 4.94
+   maxAtoD: 1023.0
+   maxPower: 250.0
+   maxPowerIndicator: 5.0

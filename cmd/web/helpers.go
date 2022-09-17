@@ -8,12 +8,28 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"path/filepath"
 	"runtime/debug"
+)
+
+const (
+	remoteAddr        = "192.168.4.72" //TODO: need to change it to a server name
+	absZero           = 273.15         //per Lord Kelvin
+	calTemp           = 25.0           //per TI datasheet
+	calVoltage        = 2.982          //per TI datasheet
+	airFactor         = 1.002          //correction factor for air temperature sensor relative to thermocouple
+	sinkFactor        = 1.007          //correction factor for the heatsink temperature sensor relative to thermocouple
+	plusFive          = 4.94           //Arduino Nano measured reference voltage.
+	maxAtoD           = 1023.0         //10 bits all ones.
+	maxPower          = 250.0          //assumed
+	maxPowerIndicator = 5.0            //assumed
+	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
+	//TODO: need to build an alarm for high temperature
 )
 
 // <+++++++++++++++++++++++ Template Processing +++++++++++++++++++++++++++>
@@ -86,26 +102,11 @@ func (app *application) notFound(w http.ResponseWriter) {
 
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
-	// var localAddr = "192.168.0.30"
-	// localAddress, _ := net.ResolveTCPAddr("tcp", localAddr)
-	//
-	// // Create a transport like http.DefaultTransport, but with a specified localAddr
-	// transport := &http.Transport{
-	// 	Proxy: http.ProxyFromEnvironment,
-	// 	Dial: (&net.Dialer{
-	// 		Timeout:   325 * time.Millisecond,
-	// 		KeepAlive: 325 * time.Millisecond,
-	// 		LocalAddr: localAddress,
-	// 	}).Dial,
-	// }
-	//
-	// client := &http.Client{
-	// 	Transport: transport,
-	// }
+
 	client := &http.Client{
 		Timeout: 1 * time.Second,
 	}
-	//	var response *http.Response
+
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
 	response, err := client.Get(url)
 	if err != nil {
@@ -139,6 +140,14 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				YesData:      "false",
 				NoConnection: "true",
 				Msg:          "Connection reset by the head end",
+			}, nil
+		}
+		if errors.Is(err, syscall.EHOSTDOWN) {
+			app.errorLog.Printf("%v", err)
+			return &templateData{
+				YesData:      "false",
+				NoConnection: "true",
+				Msg:          "Host is down",
 			}, nil
 		}
 		return td, err
@@ -177,5 +186,34 @@ func (app *application) getRemote(q string) (*templateData, error) {
 		td.NoConnection = "false"
 		td.Msg = ""
 	}
+	return td, nil
+}
+
+func (app *application) processSensors(td *templateData) (*templateData, error) {
+
+	ampPower, err := strconv.ParseFloat(td.AmpPower, 64)
+	if err != nil {
+		td.Msg = "Amp power from the far end was not a number"
+		return td, nil
+	}
+	ampPower *= app.powerFactor
+	td.AmpPower = fmt.Sprintf("%0.2f", ampPower)
+
+	sinkTemp, err := strconv.ParseFloat(td.SinkTemp, 64)
+	if err != nil {
+		td.Msg = "Heatsink temperature from the far end was not a number"
+		return td, nil
+	}
+	sinkTemp = sinkTemp*app.tempFactor*app.sinkFactor - absZero
+	td.SinkTemp = fmt.Sprintf("%0.2f", sinkTemp)
+
+	airTemp, err := strconv.ParseFloat(td.AirTemp, 64)
+	if err != nil {
+		td.Msg = "Air temperature from the far end was not a number"
+		return td, nil
+	}
+	airTemp = airTemp*app.tempFactor*app.airFactor - absZero
+	td.AirTemp = fmt.Sprintf("%0.2f", airTemp)
+
 	return td, nil
 }
