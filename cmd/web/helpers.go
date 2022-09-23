@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"syscall"
@@ -15,6 +16,8 @@ import (
 
 	"path/filepath"
 	"runtime/debug"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 
 // <+++++++++++++++++++++++ Template Processing +++++++++++++++++++++++++++>
 
+//This is straight out of Alex Edward's Let's Go book
 func newTemplateCache(dir string) (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
@@ -64,6 +68,7 @@ func newTemplateCache(dir string) (map[string]*template.Template, error) {
 	return cache, nil
 }
 
+//This is straight out of Alex Edward's Let's Go book
 func (app *application) render(w http.ResponseWriter, r *http.Request,
 	name string, td *templateData) {
 	ts, ok := app.templateCache[name]
@@ -83,6 +88,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request,
 
 //<++++++++++++++++   centralized error handling   +++++++++++++++++++>
 
+//This is straight out of Alex Edward's Let's Go book
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.errorLog.Output(2, trace) //to not get the helper file...
@@ -90,27 +96,33 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 		http.StatusInternalServerError)
 }
 
+//This is straight out of Alex Edward's Let's Go book
 func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
 }
 
+//This is straight out of Alex Edward's Let's Go book
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
 //<++++++++++++++++++++++   Query head end   +++++++++++++++++++++++++++>
 
+//Makes an HTTP call to the far end with the parameter given.  In most cases,
+//it does not return an error (see below) but populates the message field.
+//return data is raw A/D convertor data
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
 
 	client := &http.Client{
 		Timeout: 1 * time.Second,
 	}
-
+	// TODO: replace remote address with server name
+	//better yet, make the server name or IP address a command line flag
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
 	response, err := client.Get(url)
 	if err != nil {
-		if e, ok := err.(net.Error); ok && e.Timeout() {
+		if e, ok := err.(net.Error); ok && e.Timeout() { //timeout error
 			app.errorLog.Printf("%v", err)
 			return &templateData{
 				NoConnection: "true",
@@ -118,7 +130,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				Msg:          "Connection to the head end is lost",
 			}, nil
 		}
-		if errors.Is(err, syscall.EACCES) {
+		if errors.Is(err, syscall.EACCES) { //Access denied
 			app.errorLog.Printf("%v", err)
 			return &templateData{
 				YesData:      "false",
@@ -126,7 +138,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				Msg:          "Connection access denied",
 			}, nil
 		}
-		if errors.Is(err, syscall.ECONNREFUSED) {
+		if errors.Is(err, syscall.ECONNREFUSED) { //connection refused
 			app.errorLog.Printf("%v", err)
 			return &templateData{
 				YesData:      "false",
@@ -134,7 +146,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				Msg:          "Connection to the head end refused",
 			}, nil
 		}
-		if errors.Is(err, syscall.ECONNRESET) {
+		if errors.Is(err, syscall.ECONNRESET) { //connecton reset
 			app.errorLog.Printf("%v", err)
 			return &templateData{
 				YesData:      "false",
@@ -142,7 +154,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				Msg:          "Connection reset by the head end",
 			}, nil
 		}
-		if errors.Is(err, syscall.EHOSTDOWN) {
+		if errors.Is(err, syscall.EHOSTDOWN) { //host down
 			app.errorLog.Printf("%v", err)
 			return &templateData{
 				YesData:      "false",
@@ -159,13 +171,13 @@ func (app *application) getRemote(q string) (*templateData, error) {
 		return td, err
 	}
 	var contentsStr = string(buf)
-	retPairs := strings.Split(contentsStr, ";")
-	if q == "r" {
+	retPairs := strings.Split(contentsStr, ";") //all key=value pairs are ; seperated
+	if q == "r" {                               //process this way if the request was a quary
 		if len(retPairs) == 1 {
 			return td, fmt.Errorf("%s", retPairs[0])
 		}
 		for _, pairs := range retPairs {
-			pair := strings.Split(pairs, "=")
+			pair := strings.Split(pairs, "=") //split the key=value pairs
 			if len(pair) != 2 {
 				return td, fmt.Errorf("pair failed text %v", pairs)
 			}
@@ -189,6 +201,8 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	return td, nil
 }
 
+//take the raw A/D data from the app structure and make it usable.
+//See the Adjustments page for details.
 func (app *application) processSensors(td *templateData) (*templateData, error) {
 
 	ampPower, err := strconv.ParseFloat(td.AmpPower, 64)
@@ -215,5 +229,67 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	airTemp = airTemp*app.tempFactor*app.airFactor - absZero
 	td.AirTemp = fmt.Sprintf("%0.2f", airTemp)
 
+	return td, nil
+}
+
+//read adjust.yaml file and change the Adjustment parmeters accordingly.
+func (app *application) adjust() {
+	configFlag := true
+	config := &configType{}
+	goPath := os.Getenv("GOPATH")
+	configPath := filepath.Join(goPath, "EME_Base/adjust.yaml")
+
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		if errors.Is(err, syscall.ENOENT) { //if no yaml file, keep the previous configuration numbers
+			fmt.Println("No adjust.yaml file found", err)
+			configFlag = false
+		} else {
+			app.errorLog.Fatal(err)
+		}
+	}
+	if configFlag {
+		err = yaml.Unmarshal(configData, config)
+		if err != nil {
+			app.errorLog.Fatal(err)
+		}
+		if app.debugOption {
+			fmt.Printf("<-----------Adjustment values---------------->\n")
+			fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
+			fmt.Printf("Cal Temp: %0.2f\n", config.CalTemp)
+			fmt.Printf("Cal Voltage: %0.2f\n", config.CalVoltage)
+			fmt.Printf("Air Factor: %0.2f\n", config.AirFactor)
+			fmt.Printf("Sink Factor: %0.2f\n", config.SinkFactor)
+			fmt.Printf("Plus Five: %0.2f\n", config.PlusFive)
+			fmt.Printf("Max A/D: %0.2f\n", config.MaxAtoD)
+			fmt.Printf("Max Power: %0.2f\n", config.MaxPower)
+			fmt.Printf("Max Power Indicator: %0.2f\n", config.MaxPowerIndicator)
+		}
+		app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
+		app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
+		app.airFactor = config.AirFactor
+		app.sinkFactor = config.SinkFactor
+		if app.debugOption {
+			fmt.Printf("<----------------Adjusted values------------------->\n")
+			fmt.Printf("Power Factor: %0.3f\n", app.powerFactor)
+			fmt.Printf("Temp Factor: %0.3f\n", app.tempFactor)
+			fmt.Printf("Air Factor: %0.3f\n", app.airFactor)
+			fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
+		}
+	}
+}
+
+//Wrapper for getRemote and processSensors since they are often called together.
+func (app *application) updateSensors() (*templateData, error) {
+	td, err := app.getRemote("r") //r for report (status
+	if err != nil {
+		return &templateData{}, err
+	}
+	if err == nil && td.Msg == "" {
+		td, err = app.processSensors(td)
+		if err != nil {
+			return &templateData{}, err
+		}
+	}
 	return td, nil
 }

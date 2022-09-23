@@ -3,15 +3,11 @@ package main
 import (
 	//	"flag"
 
-	"errors"
-	"fmt"
+	"flag"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"syscall"
-
-	"gopkg.in/yaml.v2"
 )
 
 //The design of this program is along the lines of Alex Edward's
@@ -20,12 +16,15 @@ import (
 
 //for injecting data into handlers
 type application struct {
-	powerFactor   float64
-	tempFactor    float64
+	powerFactor float64 //multiply by A/D output to get the power
+	tempFactor  float64
+	//multiply by A/D output and airFactor then subtract absolute zero to get air temparture
+	//multiply by A/D output and sinkFactor then subtract absolute zero to get sink temparture
 	airFactor     float64
 	sinkFactor    float64
 	errorLog      *log.Logger
 	infoLog       *log.Logger
+	debugOption   bool
 	templateCache map[string]*template.Template
 }
 
@@ -38,11 +37,14 @@ type configType struct {
 	PlusFive          float64 `yaml:"plusFive"`
 	MaxAtoD           float64 `yaml:"maxAtoD"`
 	MaxPower          float64 `yaml:"maxPower"`
-	MaxPowerIndicator float64 `yaml:"maxPowerIndictor`
+	MaxPowerIndicator float64 `yaml:"maxPowerIndicator"`
 }
 
 func main() {
 	var err error
+
+	optionDebug := flag.Bool("d", false, "true turns on debug option")
+	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.LUTC)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.LUTC|log.Llongfile)
@@ -60,29 +62,10 @@ func main() {
 		sinkFactor:    sinkFactor,
 		errorLog:      errorLog,
 		infoLog:       infoLog,
+		debugOption:   *optionDebug,
 		templateCache: templateCache,
 	}
-	configFlag := true
-	config := &configType{}
-	configPath := os.Getenv("EME_Base")
-	configData, err := os.ReadFile(fmt.Sprintf("%s/adjust.yaml", configPath))
-	if err != nil {
-		if errors.Is(err, syscall.ENOENT) { //if no yaml file, keep the previous configuration numbers
-			configFlag = false
-		} else {
-			errorLog.Fatal(err)
-		}
-	}
-	if configFlag {
-		err = yaml.Unmarshal(configData, config)
-		if err != nil {
-			errorLog.Fatal(err)
-		}
-		app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
-		app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
-		app.airFactor = config.AirFactor
-		app.tempFactor = config.SinkFactor
-	}
+	app.adjust()
 
 	mux := app.routes()
 	srv := &http.Server{
@@ -106,5 +89,6 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/ampOn", app.ampOn)
 	mux.HandleFunc("/ampOff", app.ampOff)
 	mux.HandleFunc("/adjustments", app.adjustments)
+	mux.HandleFunc("/readjust", app.readjust)
 	return mux
 }

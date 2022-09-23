@@ -21,7 +21,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) monitor(w http.ResponseWriter, r *http.Request) {
-	td, err := app.getRemote("r") //r for report (status)
+	td, err := app.updateSensors()
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -30,17 +30,13 @@ func (app *application) monitor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) updateMonitor(w http.ResponseWriter, r *http.Request) {
-	td, err := app.getRemote("r") //r for report (status
+
+	td, err := app.updateSensors()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	if err == nil && td.Msg == "" {
-		td, err = app.processSensors(td)
-		if err != nil {
-			app.serverError(w, err)
-		}
-	}
+
 	b, err := json.Marshal(td)
 	if err != nil {
 		app.serverError(w, err)
@@ -57,7 +53,7 @@ func (app *application) ampOn(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	td, err := app.getRemote("r") // r for report
+	td, err := app.updateSensors()
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -71,7 +67,7 @@ func (app *application) ampOff(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	td, err := app.getRemote("r") // r for report
+	td, err := app.updateSensors()
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -82,4 +78,15 @@ func (app *application) ampOff(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) adjustments(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "adjustments.page.html", nil)
+}
+
+func (app *application) readjust(w http.ResponseWriter, r *http.Request) {
+	app.adjust()
+	td, err := app.updateSensors()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.render(w, r, "monitor.page.html", td)
 }
