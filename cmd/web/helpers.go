@@ -21,16 +21,16 @@ import (
 )
 
 const (
-	remoteAddr        = "192.168.4.72" //TODO: need to change it to a server name
-	absZero           = 273.15         //per Lord Kelvin
-	calTemp           = 25.0           //per TI datasheet
-	calVoltage        = 2.982          //per TI datasheet
-	airFactor         = 1.002          //correction factor for air temperature sensor relative to thermocouple
-	sinkFactor        = 1.007          //correction factor for the heatsink temperature sensor relative to thermocouple
-	plusFive          = 4.94           //Arduino Nano measured reference voltage.
-	maxAtoD           = 1023.0         //10 bits all ones.
-	maxPower          = 250.0          //assumed
-	maxPowerIndicator = 5.0            //assumed
+	remoteAddr        = "192.168.1.240" //"192.168.4.72" //TODO: need to change it to a server name
+	absZero           = 273.15          //per Lord Kelvin
+	calTemp           = 25.0            //per TI datasheet
+	calVoltage        = 2.982           //per TI datasheet
+	airFactor         = 1.002           //correction factor for air temperature sensor relative to thermocouple
+	sinkFactor        = 1.007           //correction factor for the heatsink temperature sensor relative to thermocouple
+	plusFive          = 4.94            //Arduino Nano measured reference voltage.
+	maxAtoD           = 1023.0          //10 bits all ones.
+	maxPower          = 250.0           //assumed
+	maxPowerIndicator = 5.0             //assumed
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
 )
