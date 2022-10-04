@@ -38,6 +38,7 @@ type configType struct {
 	MaxAtoD           float64 `yaml:"maxAtoD"`
 	MaxPower          float64 `yaml:"maxPower"`
 	MaxPowerIndicator float64 `yaml:"maxPowerIndicator"`
+	tempThreshold     float64 `yaml:"tempThreshold"`
 }
 
 func main() {
@@ -64,6 +65,7 @@ func main() {
 		infoLog:       infoLog,
 		debugOption:   *optionDebug,
 		templateCache: templateCache,
+		tempThreshold: tempThreshold,
 	}
 	app.adjust()
 
@@ -89,6 +91,6 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/ampOn", app.ampOn)
 	mux.HandleFunc("/ampOff", app.ampOff)
 	mux.HandleFunc("/adjustments", app.adjustments)
-	mux.HandleFunc("/readjust", app.readjust)
+	mux.HandleFunc("/readjust", app.reAdjust)
 	return mux
 }

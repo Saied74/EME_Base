@@ -8,3 +8,4 @@
    maxAtoD: 1023.0
    maxPower: 250.0
    maxPowerIndicator: 5.0
+   tempThreshold: 15

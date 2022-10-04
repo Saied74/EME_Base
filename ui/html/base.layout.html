@@ -15,7 +15,7 @@
 <script type="text/javascript"
   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
-
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 <style>
 body {
   background-color: #FEDBD0;
@@ -29,6 +29,7 @@ p, h2, h3, h4, h5, th, td, input, span, button {
 <title>{{template "title" .}}</title>
 </head>
 <body>
+
 
 
 <nav class="navbar navbar-expand-lg" style="background-color: #442C2E">
@@ -57,6 +58,11 @@ p, h2, h3, h4, h5, th, td, input, span, button {
         <li class="nav-item">
           <a class="nav-link" style="color: white" href="/readjust">Readjust</a>
         </li>
+        {{if .Peep}}
+        <li class="nav-item">
+          <a class="nav-link" style="color: white" data-bs-toggle="modal" data-bs-target="#smallModal" href="#">Peep</a>
+        </li>
+        {{end}}
       </ul>
     </div>
   </div>
@@ -84,27 +90,98 @@ p, h2, h3, h4, h5, th, td, input, span, button {
 
 </body>
 
-<!-- <script src="/static/js/main.js" type="text/javascript"</script> -->
-<script>
-$(document).ready(function(){
-  var title = $("title").text()
 
-  if (title == "monitor") {
+<script>
+
+$(document).ready(function(){
+
+  var air = []; // Air Temperature
+  var sink = []; //Heat Sink Temperature
+  var title = $("title").text()
+  var xVal = 0;
+  var  yAirVal = 1;
+  var ySinkVal = 2;
+
+  if (title == "monitor" || title == "small") {
     setInterval(function(){
       $.getJSON("/update-monitor").then(function(data){
+
         $("#noConnection").html(data.msg);
         if (data.yesData == "true") {
           $("#ampStatus").html(data.ampStatus);
           $("#ampPower").html(data.ampPower);
           $("#airTemp").html(data.airTemp);
+          yAirVal = parseInt(data.airTemp);
           $("#sinkTemp").html(data.sinkTemp);
+          ySinkVal = parseInt(data.sinkTemp);
+          if (parseFloat(data.sinkTemp) > 50) {
+            $("#peep").css("background-color", "red")
+          }
+
           $("#doorStatus").html(data.doorStatus);
         }
       })
     },750)
-    }
 
+
+  // if (title == "monitor") {
+
+    var chart = new CanvasJS.Chart("chartContainer", {
+    	title :{
+    		text: "Temperature"
+    	},
+      legend: {
+        font: 25
+      },
+    	data: [
+        {
+    		type: "line",
+        showInLegend: true,
+        legendText: "Cabinet Air",
+    		dataPoints: air
+    	},
+        {
+    		type: "line",
+        showInLegend: true,
+        legendText: "Heat Sink",
+    		dataPoints: sink
+    	},
+    ]
+    });
+
+
+    var updateInterval = 750;
+    var dataLength = 20; // number of dataPoints visible at any point
+
+    var updateAirChart = function (count) {
+    	count = count || 1;
+    	for (var j = 0; j < count; j++) {
+    		// yVal = yVal +  Math.round(5 + Math.random() *(-5-5));
+    		air.push({
+    			x: xVal,
+    			y: yAirVal
+    		});
+        sink.push({
+          x: xVal,
+          y: ySinkVal
+        });
+    		xVal++;
+    	}
+    	if (air.length > dataLength) {
+    		air.shift();
+        sink.shift();
+    	}
+    	chart.render();
+    };
+
+    updateAirChart(dataLength);
+    // updateSinkChart(dataLength);
+    setInterval(function(){updateAirChart()}, updateInterval);
+    // setInterval(function(){updateSinkChart()}, updateInterval);
+
+};
 });
+
 </script>
 
 </html>

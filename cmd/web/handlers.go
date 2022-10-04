@@ -6,18 +6,21 @@ import (
 )
 
 type templateData struct {
-	YesData      string `json:"yesData"`
-	NoConnection string `json:"noConnection"`
-	Msg          string `json:"msg"`
-	AmpStatus    string `json:"ampStatus"`
-	AmpPower     string `json:"ampPower"`
-	AirTemp      string `json:"airTemp"`
-	SinkTemp     string `json:"sinkTemp"`
-	DoorStatus   string `json:"doorStatus"`
+	YesData       string `json:"yesData"`
+	NoConnection  string `json:"noConnection"`
+	Msg           string `json:"msg"`
+	AmpStatus     string `json:"ampStatus"`
+	AmpPower      string `json:"ampPower"`
+	AirTemp       string `json:"airTemp"`
+	SinkTemp      string `json:"sinkTemp"`
+	DoorStatus    string `json:"doorStatus"`
+	tempThreshold string `json:"tempThreshold"`
+	Peep          bool
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	app.render(w, r, "home.page.html", nil)
+	td := &templateData{}
+	app.render(w, r, "home.page.html", td)
 }
 
 func (app *application) monitor(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +29,7 @@ func (app *application) monitor(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
+	td.Peep = true
 	app.render(w, r, "monitor.page.html", td)
 }
 
@@ -77,10 +81,11 @@ func (app *application) ampOff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) adjustments(w http.ResponseWriter, r *http.Request) {
-	app.render(w, r, "adjustments.page.html", nil)
+	td := &templateData{}
+	app.render(w, r, "adjustments.page.html", td)
 }
 
-func (app *application) readjust(w http.ResponseWriter, r *http.Request) {
+func (app *application) reAdjust(w http.ResponseWriter, r *http.Request) {
 	app.adjust()
 	td, err := app.updateSensors()
 	if err != nil {

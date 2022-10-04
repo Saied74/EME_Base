@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -31,6 +32,7 @@ const (
 	maxAtoD           = 1023.0          //10 bits all ones.
 	maxPower          = 250.0           //assumed
 	maxPowerIndicator = 5.0             //assumed
+	tempThreshold     = 50              //threshold at which user will be warned
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
 )
@@ -122,6 +124,14 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
 	response, err := client.Get(url)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			app.errorLog.Printf("%v", err)
+			return &templateData{
+				NoConnection: "true",
+				YesData:      "false",
+				Msg:          "Context deadline exceeded (1)",
+			}, nil
+		}
 		if e, ok := err.(net.Error); ok && e.Timeout() { //timeout error
 			app.errorLog.Printf("%v", err)
 			return &templateData{
