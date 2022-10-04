@@ -110,11 +110,14 @@ $(document).ready(function(){
         if (data.yesData == "true") {
           $("#ampStatus").html(data.ampStatus);
           $("#ampPower").html(data.ampPower);
+          $("#ampPower2").html(data.ampPower);
           $("#airTemp").html(data.airTemp);
+          $("#airTemp2").html(data.airTemp);
           yAirVal = parseInt(data.airTemp);
           $("#sinkTemp").html(data.sinkTemp);
+          $("#sinkTemp2").html(data.sinkTemp);
           ySinkVal = parseInt(data.sinkTemp);
-          if (parseFloat(data.sinkTemp) > 50) {
+          if (parseFloat(data.sinkTemp) > parseFloat(data.tempThreshold)) {
             $("#peep").css("background-color", "red")
           }
 
