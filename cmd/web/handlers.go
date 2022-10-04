@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -40,7 +41,7 @@ func (app *application) updateMonitor(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	td.tempThreshold = fmt.Sprintf("0.3%f", app.tempThreshold)
 	b, err := json.Marshal(td)
 	if err != nil {
 		app.serverError(w, err)

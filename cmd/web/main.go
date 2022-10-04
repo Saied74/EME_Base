@@ -26,6 +26,7 @@ type application struct {
 	infoLog       *log.Logger
 	debugOption   bool
 	templateCache map[string]*template.Template
+	tempThreshold float64
 }
 
 type configType struct {

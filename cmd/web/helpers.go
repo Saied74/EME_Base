@@ -32,7 +32,7 @@ const (
 	maxAtoD           = 1023.0          //10 bits all ones.
 	maxPower          = 250.0           //assumed
 	maxPowerIndicator = 5.0             //assumed
-	tempThreshold     = 50              //threshold at which user will be warned
+	tempThreshold     = 50.0            //threshold at which user will be warned
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
 )
@@ -279,6 +279,7 @@ func (app *application) adjust() {
 		app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 		app.airFactor = config.AirFactor
 		app.sinkFactor = config.SinkFactor
+		app.tempThreshold = config.tempThreshold
 		if app.debugOption {
 			fmt.Printf("<----------------Adjusted values------------------->\n")
 			fmt.Printf("Power Factor: %0.3f\n", app.powerFactor)
