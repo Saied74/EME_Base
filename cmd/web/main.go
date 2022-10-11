@@ -66,9 +66,12 @@ func main() {
 		infoLog:       infoLog,
 		debugOption:   *optionDebug,
 		templateCache: templateCache,
-		tempThreshold: tempThreshold,
+		tempThreshold: tempThreshold, //small window turns read above this threshold
 	}
-	app.adjust()
+	err = app.adjust()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	mux := app.routes()
 	srv := &http.Server{

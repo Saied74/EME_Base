@@ -94,13 +94,13 @@ p, h2, h3, h4, h5, th, td, input, span, button {
 <script>
 
 $(document).ready(function(){
-
+  var updateCount = 0; //update graph when it reaches 27
   var air = []; // Air Temperature
   var sink = []; //Heat Sink Temperature
   var title = $("title").text()
   var xVal = 0;
-  var  yAirVal = 1;
-  var ySinkVal = 2;
+  var yAirVal = 25;
+  var ySinkVal = 25;
 
   if (title == "monitor" || title == "small") {
     setInterval(function(){
@@ -117,17 +117,13 @@ $(document).ready(function(){
           $("#sinkTemp").html(data.sinkTemp);
           $("#sinkTemp2").html(data.sinkTemp);
           ySinkVal = parseInt(data.sinkTemp);
-          if (parseFloat(data.sinkTemp) > parseFloat(data.tempThreshold)) {
+          if (parseFloat(ySinkVal) > parseInt(data.tempThreshold)) {
             $("#peep").css("background-color", "red")
           }
-
           $("#doorStatus").html(data.doorStatus);
         }
       })
     },750)
-
-
-  // if (title == "monitor") {
 
     var chart = new CanvasJS.Chart("chartContainer", {
     	title :{
@@ -154,35 +150,39 @@ $(document).ready(function(){
 
 
     var updateInterval = 750;
-    var dataLength = 20; // number of dataPoints visible at any point
-
+    var dataLength = 40; // number of dataPoints visible at any point
     var updateAirChart = function (count) {
-    	count = count || 1;
-    	for (var j = 0; j < count; j++) {
-    		// yVal = yVal +  Math.round(5 + Math.random() *(-5-5));
-    		air.push({
-    			x: xVal,
-    			y: yAirVal
-    		});
-        sink.push({
-          x: xVal,
-          y: ySinkVal
-        });
-    		xVal++;
-    	}
-    	if (air.length > dataLength) {
-    		air.shift();
-        sink.shift();
-    	}
-    	chart.render();
+      updateCount++;
+      if (updateCount == 26) {
+        updateCount = 0;
+    	   count = count || 1;
+    	    for (var j = 0; j < count; j++) {
+            // yAirVal += 0.5
+            // ySinkVal += 1.0
+    		    // yVal = yVal +  Math.round(5 + Math.random() *(-5-5));
+    		    air.push({
+    			     x: xVal,
+    			     y: yAirVal
+    		    });
+            sink.push({
+               x: xVal,
+               y: ySinkVal
+            });
+    		    xVal++;
+    	    }
+    	    if (air.length > dataLength) {
+    		    air.shift();
+            sink.shift();
+    	    }
+    	    chart.render();
+      }
     };
-
     updateAirChart(dataLength);
     // updateSinkChart(dataLength);
     setInterval(function(){updateAirChart()}, updateInterval);
     // setInterval(function(){updateSinkChart()}, updateInterval);
 
-};
+  };
 });
 
 </script>

@@ -243,9 +243,9 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 }
 
 //read adjust.yaml file and change the Adjustment parmeters accordingly.
-func (app *application) adjust() {
-	configFlag := true
+func (app *application) adjust() error {
 	config := &configType{}
+
 	goPath := os.Getenv("GOPATH")
 	configPath := filepath.Join(goPath, "EME_Base/adjust.yaml")
 
@@ -253,41 +253,36 @@ func (app *application) adjust() {
 	if err != nil {
 		if errors.Is(err, syscall.ENOENT) { //if no yaml file, keep the previous configuration numbers
 			fmt.Println("No adjust.yaml file found", err)
-			configFlag = false
-		} else {
-			app.errorLog.Fatal(err)
+			return nil
 		}
+		return err
 	}
-	if configFlag {
-		err = yaml.Unmarshal(configData, config)
-		if err != nil {
-			app.errorLog.Fatal(err)
-		}
-		if app.debugOption {
-			fmt.Printf("<-----------Adjustment values---------------->\n")
-			fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
-			fmt.Printf("Cal Temp: %0.2f\n", config.CalTemp)
-			fmt.Printf("Cal Voltage: %0.2f\n", config.CalVoltage)
-			fmt.Printf("Air Factor: %0.2f\n", config.AirFactor)
-			fmt.Printf("Sink Factor: %0.2f\n", config.SinkFactor)
-			fmt.Printf("Plus Five: %0.2f\n", config.PlusFive)
-			fmt.Printf("Max A/D: %0.2f\n", config.MaxAtoD)
-			fmt.Printf("Max Power: %0.2f\n", config.MaxPower)
-			fmt.Printf("Max Power Indicator: %0.2f\n", config.MaxPowerIndicator)
-		}
-		app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
-		app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
-		app.airFactor = config.AirFactor
-		app.sinkFactor = config.SinkFactor
-		app.tempThreshold = config.tempThreshold
-		if app.debugOption {
-			fmt.Printf("<----------------Adjusted values------------------->\n")
-			fmt.Printf("Power Factor: %0.3f\n", app.powerFactor)
-			fmt.Printf("Temp Factor: %0.3f\n", app.tempFactor)
-			fmt.Printf("Air Factor: %0.3f\n", app.airFactor)
-			fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
-		}
+	err = yaml.Unmarshal(configData, config)
+	if err != nil {
+		return err
 	}
+	app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
+	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
+	app.airFactor = config.AirFactor
+	app.sinkFactor = config.SinkFactor
+	app.tempThreshold = config.tempThreshold
+	if app.debugOption {
+		fmt.Printf("<-----------Adjustment values---------------->\n")
+		fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
+		fmt.Printf("Cal Temp: %0.2f\n", config.CalTemp)
+		fmt.Printf("Cal Voltage: %0.2f\n", config.CalVoltage)
+		fmt.Printf("Air Factor: %0.2f\n", config.AirFactor)
+		fmt.Printf("Sink Factor: %0.2f\n", config.SinkFactor)
+		fmt.Printf("Plus Five: %0.2f\n", config.PlusFive)
+		fmt.Printf("Max A/D: %0.2f\n", config.MaxAtoD)
+		fmt.Printf("Max Power: %0.2f\n", config.MaxPower)
+		fmt.Printf("Max Power Indicator: %0.2f\n", config.MaxPowerIndicator)
+		fmt.Printf("Power Factor: %0.3f\n", app.powerFactor)
+		fmt.Printf("Temp Factor: %0.3f\n", app.tempFactor)
+		fmt.Printf("Air Factor: %0.3f\n", app.airFactor)
+		fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
+	}
+	return nil
 }
 
 //Wrapper for getRemote and processSensors since they are often called together.
