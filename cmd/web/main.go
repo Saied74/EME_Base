@@ -39,7 +39,7 @@ type configType struct {
 	MaxAtoD           float64 `yaml:"maxAtoD"`
 	MaxPower          float64 `yaml:"maxPower"`
 	MaxPowerIndicator float64 `yaml:"maxPowerIndicator"`
-	tempThreshold     float64 `yaml:"tempThreshold"`
+	TempThreshold     float64 `yaml:"tempThreshold"`
 }
 
 func main() {
@@ -82,8 +82,10 @@ func main() {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	infoLog.Printf("starting server on :4000")
-	err = srv.ListenAndServe()
-	errorLog.Fatal(err)
+	go srv.ListenAndServe()
+	// err = srv.ListenAndServe()
+	// errorLog.Fatal(err)
+	app.little()
 }
 
 func (app *application) routes() *http.ServeMux {

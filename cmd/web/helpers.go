@@ -261,11 +261,12 @@ func (app *application) adjust() error {
 	if err != nil {
 		return err
 	}
+
 	app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
 	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 	app.airFactor = config.AirFactor
 	app.sinkFactor = config.SinkFactor
-	app.tempThreshold = config.tempThreshold
+	app.tempThreshold = config.TempThreshold
 	if app.debugOption {
 		fmt.Printf("<-----------Adjustment values---------------->\n")
 		fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
@@ -281,6 +282,7 @@ func (app *application) adjust() error {
 		fmt.Printf("Temp Factor: %0.3f\n", app.tempFactor)
 		fmt.Printf("Air Factor: %0.3f\n", app.airFactor)
 		fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
+		fmt.Printf("Temperature Threshold: %0.3f\n", app.tempThreshold)
 	}
 	return nil
 }
