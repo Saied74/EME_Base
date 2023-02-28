@@ -4,11 +4,14 @@ import (
 	//	"flag"
 
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 )
+
+const pingCount = 50
 
 //The design of this program is along the lines of Alex Edward's
 //Let's Go except since it is a single user local program, it
@@ -27,6 +30,7 @@ type application struct {
 	debugOption   bool
 	templateCache map[string]*template.Template
 	tempThreshold float64
+	remoteOn      bool
 }
 
 type configType struct {
@@ -67,11 +71,21 @@ func main() {
 		debugOption:   *optionDebug,
 		templateCache: templateCache,
 		tempThreshold: tempThreshold, //small window turns read above this threshold
+		remoteOn:      false,
 	}
 	err = app.adjust()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	for i := 0; i < pingCount; i++ {
+		_, err = app.getRemote("p")
+		if err == nil {
+			fmt.Println("Count", i)
+			break
+		}
+	}
+	fmt.Println(err)
 
 	mux := app.routes()
 	srv := &http.Server{

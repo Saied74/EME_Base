@@ -17,11 +17,14 @@ import (
 )
 
 const (
-	red    = "red"
-	notRed = "white"
+	red     = "red"
+	notRed  = "white"
+	turnOn  = "Turn Remote On"
+	turnOff = "Turn Remote Off"
 )
 
 func (app *application) little() {
+	buttonText := turnOn
 	a := ap.New()
 	w := a.NewWindow("Temperature and Power")
 	dvra, err := fyne.LoadResourceFromPath("ui/static/img/dvra.jpeg")
@@ -45,9 +48,20 @@ func (app *application) little() {
 	row2Col1 := widget.NewLabel(td.AmpPower)
 	row2Col2 := widget.NewLabel(td.AirTemp)
 	row2Col3 := widget.NewLabel(td.SinkTemp)
+	button := widget.NewButton(buttonText, func() {
+		if app.remoteOn {
+			app.getRemote("f")
+			//buttonText = turnOn
+			app.remoteOn = false
+		} else {
+			app.getRemote("t")
+			//	buttonText = turnOff
+			app.remoteOn = true
+		}
+	})
 	row2 := container.New(layout.NewGridLayout(3), row2Col1, row2Col2, row2Col3)
 
-	grid := container.New(layout.NewVBoxLayout(), row1, row2)
+	grid := container.New(layout.NewVBoxLayout(), row1, row2, button)
 	w.SetContent(grid)
 	w.Resize(fyne.NewSize(180, 80))
 
@@ -69,7 +83,7 @@ func (app *application) little() {
 				bgColor := canvas.NewRectangle(color.NRGBA{R: 255, G: 0, B: 0, A: 150})
 				newRow1 := container.New(layout.NewMaxLayout(), bgColor, row1)
 				newRow2 := container.New(layout.NewMaxLayout(), bgColor, row2)
-				grid := container.New(layout.NewVBoxLayout(), newRow1, newRow2)
+				grid := container.New(layout.NewVBoxLayout(), newRow1, newRow2, button)
 				w.SetContent(grid)
 				w.Show()
 			}
@@ -78,6 +92,11 @@ func (app *application) little() {
 				grid := container.New(layout.NewVBoxLayout(), row1, row2)
 				w.SetContent(grid)
 				w.Show()
+			}
+			if app.remoteOn {
+				button.SetText(turnOff)
+			} else {
+				button.SetText(turnOn)
 			}
 		}
 	}()

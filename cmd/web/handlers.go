@@ -25,21 +25,28 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) monitor(w http.ResponseWriter, r *http.Request) {
-	td, err := app.updateSensors()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	td := &templateData{}
+	var err error
+	if app.remoteOn {
+		td, err = app.updateSensors()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 	td.Peep = true
 	app.render(w, r, "monitor.page.html", td)
 }
 
 func (app *application) updateMonitor(w http.ResponseWriter, r *http.Request) {
-
-	td, err := app.updateSensors()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	td := &templateData{}
+	var err error
+	if app.remoteOn {
+		td, err = app.updateSensors()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 	td.tempThreshold = fmt.Sprintf("0.3%f", app.tempThreshold)
 	b, err := json.Marshal(td)
@@ -53,29 +60,37 @@ func (app *application) updateMonitor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) ampOn(w http.ResponseWriter, r *http.Request) {
-	_, err := app.getRemote("t") //t for turn on
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	td, err := app.updateSensors()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	td := &templateData{}
+	var err error
+	if app.remoteOn {
+		_, err = app.getRemote("t") //t for turn on
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		td, err = app.updateSensors()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 	app.render(w, r, "monitor.page.html", td)
 }
 
 func (app *application) ampOff(w http.ResponseWriter, r *http.Request) {
-	_, err := app.getRemote("f") //f for turn off
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	td, err := app.updateSensors()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	td := &templateData{}
+	var err error
+	if app.remoteOn {
+		_, err = app.getRemote("f") //f for turn off
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		td, err = app.updateSensors()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 	app.render(w, r, "monitor.page.html", td)
 
@@ -87,12 +102,15 @@ func (app *application) adjustments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) reAdjust(w http.ResponseWriter, r *http.Request) {
-	app.adjust()
-	td, err := app.updateSensors()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	td := &templateData{}
+	var err error
+	if app.remoteOn {
+		app.adjust()
+		td, err = app.updateSensors()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
-
 	app.render(w, r, "monitor.page.html", td)
 }

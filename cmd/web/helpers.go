@@ -33,6 +33,7 @@ const (
 	maxPower          = 250.0           //assumed
 	maxPowerIndicator = 5.0             //assumed
 	tempThreshold     = 50.0            //threshold at which user will be warned
+	retries           = 10
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
 )
@@ -123,6 +124,9 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	//better yet, make the server name or IP address a command line flag
 	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
 	response, err := client.Get(url)
+	for i := 0; i < retries && err != nil; i++ {
+		response, err = client.Get(url)
+	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			app.errorLog.Printf("%v", err)
