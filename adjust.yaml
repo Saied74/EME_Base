@@ -4,8 +4,8 @@
    calVoltage: 2.982
    airFactor: 1.0165
    sinkFactor: 1.0125
-   plusFive: 4.91
+   plusFive: 5.00
    maxAtoD: 1023.0
-   maxPower: 250.0
+   maxPower: 1000.0
    maxPowerIndicator: 5.0
    tempThreshold: 50.0

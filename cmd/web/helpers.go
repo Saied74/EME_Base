@@ -22,17 +22,17 @@ import (
 )
 
 const (
-	remoteAddr        = "192.168.1.240" //"192.168.4.72" //TODO: need to change it to a server name
-	absZero           = 273.15          //per Lord Kelvin
-	calTemp           = 25.0            //per TI datasheet
-	calVoltage        = 2.982           //per TI datasheet
-	airFactor         = 1.002           //correction factor for air temperature sensor relative to thermocouple
-	sinkFactor        = 1.007           //correction factor for the heatsink temperature sensor relative to thermocouple
-	plusFive          = 4.94            //Arduino Nano measured reference voltage.
-	maxAtoD           = 1023.0          //10 bits all ones.
-	maxPower          = 250.0           //assumed
-	maxPowerIndicator = 5.0             //assumed
-	tempThreshold     = 50.0            //threshold at which user will be warned
+	remoteAddr        = "192.168.6.97" //"192.168.4.72" //TODO: need to change it to a server name
+	absZero           = 273.15         //per Lord Kelvin
+	calTemp           = 25.0           //per TI datasheet
+	calVoltage        = 2.982          //per TI datasheet
+	airFactor         = 1.002          //correction factor for air temperature sensor relative to thermocouple
+	sinkFactor        = 1.007          //correction factor for the heatsink temperature sensor relative to thermocouple
+	plusFive          = 4.94           //Arduino Nano measured reference voltage.
+	maxAtoD           = 1023.0         //10 bits all ones.
+	maxPower          = 1000.0         //assumed
+	maxPowerIndicator = 5.0            //assumed
+	tempThreshold     = 50.0           //threshold at which user will be warned
 	retries           = 10
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
@@ -40,7 +40,7 @@ const (
 
 // <+++++++++++++++++++++++ Template Processing +++++++++++++++++++++++++++>
 
-//This is straight out of Alex Edward's Let's Go book
+// This is straight out of Alex Edward's Let's Go book
 func newTemplateCache(dir string) (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
@@ -71,7 +71,7 @@ func newTemplateCache(dir string) (map[string]*template.Template, error) {
 	return cache, nil
 }
 
-//This is straight out of Alex Edward's Let's Go book
+// This is straight out of Alex Edward's Let's Go book
 func (app *application) render(w http.ResponseWriter, r *http.Request,
 	name string, td *templateData) {
 	ts, ok := app.templateCache[name]
@@ -91,7 +91,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request,
 
 //<++++++++++++++++   centralized error handling   +++++++++++++++++++>
 
-//This is straight out of Alex Edward's Let's Go book
+// This is straight out of Alex Edward's Let's Go book
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.errorLog.Output(2, trace) //to not get the helper file...
@@ -99,21 +99,21 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 		http.StatusInternalServerError)
 }
 
-//This is straight out of Alex Edward's Let's Go book
+// This is straight out of Alex Edward's Let's Go book
 func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
 }
 
-//This is straight out of Alex Edward's Let's Go book
+// This is straight out of Alex Edward's Let's Go book
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
 //<++++++++++++++++++++++   Query head end   +++++++++++++++++++++++++++>
 
-//Makes an HTTP call to the far end with the parameter given.  In most cases,
-//it does not return an error (see below) but populates the message field.
-//return data is raw A/D convertor data
+// Makes an HTTP call to the far end with the parameter given.  In most cases,
+// it does not return an error (see below) but populates the message field.
+// return data is raw A/D convertor data
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
 
@@ -169,7 +169,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 			}, nil
 		}
 		if errors.Is(err, syscall.EHOSTDOWN) { //host down
-			app.errorLog.Printf("%v", err)
+			//app.errorLog.Printf("%v", err)
 			return &templateData{
 				YesData:      "false",
 				NoConnection: "true",
@@ -202,10 +202,16 @@ func (app *application) getRemote(q string) (*templateData, error) {
 				td.SinkTemp = pair[1]
 			case "ampPower":
 				td.AmpPower = pair[1]
+			case "refPower":
+				td.RefPower = pair[1]
+			case "fan1Curr":
+				td.Fan1 = pair[1]
+			case "fan2Curr":
+				td.Fan2 = pair[1]
 			case "doorStatus":
 				td.DoorStatus = pair[1]
-			case "ampStatus":
-				td.AmpStatus = pair[1]
+			case "pttStatus":
+				td.PttStatus = pair[1]
 			}
 		}
 		td.YesData = "true"
@@ -215,8 +221,8 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	return td, nil
 }
 
-//take the raw A/D data from the app structure and make it usable.
-//See the Adjustments page for details.
+// take the raw A/D data from the app structure and make it usable.
+// See the Adjustments page for details.
 func (app *application) processSensors(td *templateData) (*templateData, error) {
 
 	ampPower, err := strconv.ParseFloat(td.AmpPower, 64)
@@ -226,6 +232,20 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	}
 	ampPower *= app.powerFactor
 	td.AmpPower = fmt.Sprintf("%0.2f", ampPower)
+
+	refPower, err := strconv.ParseFloat(td.RefPower, 64)
+	if err != nil {
+		td.Msg = "Reflected power from the far end was not a number"
+		return td, nil
+	}
+	refPower *= app.powerFactor
+	td.RefPower = fmt.Sprintf("%0.2f", refPower)
+	if refPower < 2 {
+		refPower = 2
+	}
+	g := refPower / ampPower
+	swr := (1 + g) / (1 - g)
+	td.SWR = fmt.Sprintf("%0.2f", swr)
 
 	sinkTemp, err := strconv.ParseFloat(td.SinkTemp, 64)
 	if err != nil {
@@ -246,12 +266,12 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	return td, nil
 }
 
-//read adjust.yaml file and change the Adjustment parmeters accordingly.
+// read adjust.yaml file and change the Adjustment parmeters accordingly.
 func (app *application) adjust() error {
 	config := &configType{}
 
-	goPath := os.Getenv("GOPATH")
-	configPath := filepath.Join(goPath, "EME_Base/adjust.yaml")
+	emePath := os.Getenv("EMEPATH")
+	configPath := filepath.Join(emePath, "adjust.yaml")
 
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
@@ -291,7 +311,7 @@ func (app *application) adjust() error {
 	return nil
 }
 
-//Wrapper for getRemote and processSensors since they are often called together.
+// Wrapper for getRemote and processSensors since they are often called together.
 func (app *application) updateSensors() (*templateData, error) {
 	td, err := app.getRemote("r") //r for report (status
 	if err != nil {

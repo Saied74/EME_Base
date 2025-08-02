@@ -17,7 +17,7 @@ const pingCount = 50
 //Let's Go except since it is a single user local program, it
 //ignore the rules for a shared over the internet application
 
-//for injecting data into handlers
+// for injecting data into handlers
 type application struct {
 	powerFactor float64 //multiply by A/D output to get the power
 	tempFactor  float64

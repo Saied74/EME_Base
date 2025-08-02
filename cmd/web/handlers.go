@@ -12,9 +12,14 @@ type templateData struct {
 	Msg           string `json:"msg"`
 	AmpStatus     string `json:"ampStatus"`
 	AmpPower      string `json:"ampPower"`
+	RefPower      string `json:"refPower"`
+	SWR           string `json:"swr"`
 	AirTemp       string `json:"airTemp"`
 	SinkTemp      string `json:"sinkTemp"`
+	Fan1          string `json:"fan1"`
+	Fan2          string `json:"fan2"`
 	DoorStatus    string `json:"doorStatus"`
+	PttStatus     string `json:"pttStatus"`
 	tempThreshold string `json:"tempThreshold"`
 	Peep          bool
 }
