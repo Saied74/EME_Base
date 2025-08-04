@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	//"log"
 	"net"
 	"net/http"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"runtime/debug"
 
 	"gopkg.in/yaml.v2"
+	//		"fyne.io/fyne/v2/data/binding"
 )
 
 const (
@@ -240,9 +242,9 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	}
 	refPower *= app.powerFactor
 	td.RefPower = fmt.Sprintf("%0.2f", refPower)
-	if refPower < 2 {
-		refPower = 2
-	}
+	//if refPower < 2 {
+	//	refPower = 2
+	//}
 	g := refPower / ampPower
 	swr := (1 + g) / (1 - g)
 	td.SWR = fmt.Sprintf("%0.2f", swr)
@@ -324,4 +326,31 @@ func (app *application) updateSensors() (*templateData, error) {
 		}
 	}
 	return td, nil
+}
+
+func (app *application) updateBoundSensors() error {
+
+	td, err := app.getRemote("r")
+	if err != nil {
+		return err
+	}
+
+	if err == nil && td.Msg == "" {
+		td, err = app.processSensors(td)
+		if err != nil {
+			return err
+		}
+		td.PttStatus = strings.TrimSuffix(td.PttStatus, "\n")
+		ampStatus.Set(td.AmpStatus)
+		ampPower.Set(td.AmpPower)
+		refPower.Set(td.RefPower)
+		swr.Set(td.SWR)
+		airTemp.Set(td.AirTemp)
+		sinkTemp.Set(td.SinkTemp)
+		fan1.Set(td.Fan1)
+		fan2.Set(td.Fan2)
+		doorStatus.Set(td.DoorStatus)
+		pttStatus.Set(td.PttStatus)
+	}
+	return nil
 }

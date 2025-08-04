@@ -97,8 +97,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	infoLog.Printf("starting server on :4000")
 	go srv.ListenAndServe()
-	// err = srv.ListenAndServe()
-	// errorLog.Fatal(err)
+
 	app.little()
 }
 
