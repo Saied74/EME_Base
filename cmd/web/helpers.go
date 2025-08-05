@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"image/color"
 	//"log"
 	"net"
 	"net/http"
@@ -255,6 +256,12 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	sinkTemp = sinkTemp*app.tempFactor*app.sinkFactor - absZero
+	if sinkTemp > sinkTempThreshold {
+		sinkExternalColor = color.White
+	} else {
+		sinkExternalColor = color.White
+		}
+
 	td.SinkTemp = fmt.Sprintf("%0.2f", sinkTemp)
 
 	airTemp, err := strconv.ParseFloat(td.AirTemp, 64)
@@ -263,6 +270,12 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	airTemp = airTemp*app.tempFactor*app.airFactor - absZero
+		if airTemp > airTempThreshold {
+		airExternalColor = red
+	} else {
+		airExternalColor = color.White
+			}
+
 	td.AirTemp = fmt.Sprintf("%0.2f", airTemp)
 
 	return td, nil
@@ -351,6 +364,9 @@ func (app *application) updateBoundSensors() error {
 		fan2.Set(td.Fan2)
 		doorStatus.Set(td.DoorStatus)
 		pttStatus.Set(td.PttStatus)
+		airBoundExternalColor.Reload()
+		sinkBoundExternalColor.Reload()
+
 	}
 	return nil
 }
