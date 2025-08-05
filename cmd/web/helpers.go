@@ -257,7 +257,7 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	}
 	sinkTemp = sinkTemp*app.tempFactor*app.sinkFactor - absZero
 	if sinkTemp > sinkTempThreshold {
-		sinkExternalColor = color.White
+		sinkExternalColor = red
 	} else {
 		sinkExternalColor = color.White
 		}
