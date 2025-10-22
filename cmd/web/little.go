@@ -22,7 +22,7 @@ const (
 	turnOn            = "Turn Remote On"
 	turnOff           = "Turn Remote Off"
 	airTempThreshold  = 30.0
-	sinkTempThreshold  = 50.0
+	sinkTempThreshold = 50.0
 	refPowerThreshold = 50.0
 	swrMidThreshold   = 1.7
 	swrHighThreshold  = 2.5
@@ -44,22 +44,19 @@ var sinkExternalColor color.Color = color.White
 var whiteBoundExternalColor = binding.BindUntyped(&whiteExternalColor)
 var airBoundExternalColor = binding.BindUntyped(&airExternalColor)
 var sinkBoundExternalColor = binding.BindUntyped(&sinkExternalColor)
-	
-
 
 var (
 	red    = color.NRGBA{R: 255, G: 0, B: 0, A: 125}
 	green  = color.NRGBA{R: 0, G: 255, B: 0, A: 150}
 	yellow = color.NRGBA{R: 255, G: 255, B: 0, A: 150}
 	baige  = color.NRGBA{R: 207, G: 185, B: 151, A: 150}
-	clr = color.White
+	clr    = color.White
 )
-
 
 type BoundColorRectWidget struct {
 	widget.BaseWidget
-	rect        *canvas.Rectangle
-	boundColor  binding.Untyped      // Now binds the untyped binding directly
+	rect         *canvas.Rectangle
+	boundColor   binding.Untyped // Now binds the untyped binding directly
 	dataListener binding.DataListener
 }
 
@@ -105,7 +102,7 @@ type boundColorRectWidgetRenderer struct {
 }
 
 func (r *boundColorRectWidgetRenderer) MinSize() fyne.Size {
-	return fyne.NewSize(5,5)
+	return fyne.NewSize(5, 5)
 }
 
 func (r *boundColorRectWidgetRenderer) Layout(size fyne.Size) {
@@ -165,7 +162,7 @@ func (app *application) little() {
 	row1 := container.New(layout.NewGridLayout(3), row1Col1, row1Col2, row1Col3)
 	row3 := container.New(layout.NewGridLayout(3), row3Col1, row3Col2, row3Col3)
 	row5 := container.New(layout.NewGridLayout(3), row5Col1, row5Col2, row5Col3)
-	
+
 	row2Col1 := makeBoundItem(ampPower, whiteBoundExternalColor)
 	row2Col2 := makeBoundItem(refPower, whiteBoundExternalColor)
 	row2Col3 := makeBoundItem(swr, whiteBoundExternalColor)
@@ -216,12 +213,12 @@ func makeItem(txt string, clr color.Color, bld bool) *fyne.Container {
 
 func makeBoundItem(b binding.String, bndExtClr binding.ExternalUntyped) *fyne.Container {
 	//return container.New(layout.NewCenterLayout(), widget.NewLabelWithData(b))
-	
+
 	bgColor := NewBoundColorRectWidget(bndExtClr) //canvas.NewRectangle(clr)
 	//bndExtClr.Reload()
 
-	can := widget.NewLabelWithData(b)//canvas.NewText(bStr, color.Black)
-	
+	can := widget.NewLabelWithData(b) //canvas.NewText(bStr, color.Black)
+
 	con := container.New(layout.NewCenterLayout(), can)
 	return container.New(layout.NewMaxLayout(), bgColor, con)
 }

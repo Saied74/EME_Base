@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"image/color"
+	"io"
 	//"log"
 	"net"
 	"net/http"
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	remoteAddr        = "192.168.6.97" //"192.168.4.72" //TODO: need to change it to a server name
+	remoteAddress        = "192.168.6.97" //"192.168.4.72" //TODO: need to change it to a server name
 	absZero           = 273.15         //per Lord Kelvin
 	calTemp           = 25.0           //per TI datasheet
 	calVoltage        = 2.982          //per TI datasheet
@@ -35,8 +35,8 @@ const (
 	maxAtoD           = 1023.0         //10 bits all ones.
 	maxPower          = 1000.0         //assumed
 	maxPowerIndicator = 5.0            //assumed
-	tempThreshold     = 50.0           //threshold at which user will be warned
-	retries           = 10
+	//tempThreshold     = 50.0           //threshold at which user will be warned
+	retries = 10
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
 	//TODO: need to build an alarm for high temperature
 )
@@ -125,7 +125,7 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	}
 	// TODO: replace remote address with server name
 	//better yet, make the server name or IP address a command line flag
-	url := fmt.Sprintf("http://%s/?q=%s", remoteAddr, q)
+	url := fmt.Sprintf("http://%s/?q=%s", app.remoteAddress, q)
 	response, err := client.Get(url)
 	for i := 0; i < retries && err != nil; i++ {
 		response, err = client.Get(url)
@@ -256,11 +256,11 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	sinkTemp = sinkTemp*app.tempFactor*app.sinkFactor - absZero
-	if sinkTemp > sinkTempThreshold {
+	if sinkTemp > app.sinkThreshold {
 		sinkExternalColor = red
 	} else {
 		sinkExternalColor = color.White
-		}
+	}
 
 	td.SinkTemp = fmt.Sprintf("%0.2f", sinkTemp)
 
@@ -270,11 +270,11 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	airTemp = airTemp*app.tempFactor*app.airFactor - absZero
-		if airTemp > airTempThreshold {
+	if airTemp > app.airThreshold {
 		airExternalColor = red
 	} else {
 		airExternalColor = color.White
-			}
+	}
 
 	td.AirTemp = fmt.Sprintf("%0.2f", airTemp)
 
@@ -305,7 +305,10 @@ func (app *application) adjust() error {
 	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 	app.airFactor = config.AirFactor
 	app.sinkFactor = config.SinkFactor
-	app.tempThreshold = config.TempThreshold
+	app.airThreshold = config.AirThreshold
+	fmt.Println("SinkThreshold: ", config.SinkThreshold)
+	app.sinkThreshold = config.SinkThreshold
+	app.remoteAddress = config.RemoteAddress
 	if app.debugOption {
 		fmt.Printf("<-----------Adjustment values---------------->\n")
 		fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
@@ -321,7 +324,9 @@ func (app *application) adjust() error {
 		fmt.Printf("Temp Factor: %0.3f\n", app.tempFactor)
 		fmt.Printf("Air Factor: %0.3f\n", app.airFactor)
 		fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
-		fmt.Printf("Temperature Threshold: %0.3f\n", app.tempThreshold)
+		fmt.Printf("Air Temperature Threshold: %0.3f\n", app.airThreshold)
+		fmt.Printf("Heatsink Temperature Threshold: %0.3f\n", app.sinkThreshold)
+		fmt.Printf("Remote Address: %s\n", app.remoteAddress)
 	}
 	return nil
 }

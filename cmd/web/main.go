@@ -29,8 +29,10 @@ type application struct {
 	infoLog       *log.Logger
 	debugOption   bool
 	templateCache map[string]*template.Template
-	tempThreshold float64
+	airThreshold  float64
+	sinkThreshold float64
 	remoteOn      bool
+	remoteAddress string
 }
 
 type configType struct {
@@ -43,7 +45,9 @@ type configType struct {
 	MaxAtoD           float64 `yaml:"maxAtoD"`
 	MaxPower          float64 `yaml:"maxPower"`
 	MaxPowerIndicator float64 `yaml:"maxPowerIndicator"`
-	TempThreshold     float64 `yaml:"tempThreshold"`
+	AirThreshold      float64 `yaml:"airThreshold"`
+	SinkThreshold     float64 `yaml:"sinkThreshold"`
+	RemoteAddress string `yaml:"remoteAddress"`
 }
 
 func main() {
@@ -70,8 +74,10 @@ func main() {
 		infoLog:       infoLog,
 		debugOption:   *optionDebug,
 		templateCache: templateCache,
-		tempThreshold: tempThreshold, //small window turns read above this threshold
+		airThreshold:  airTempThreshold, //small window turns read above this threshold
+		sinkThreshold: sinkTempThreshold,
 		remoteOn:      false,
+		remoteAddress: remoteAddress,
 	}
 	err = app.adjust()
 	if err != nil {

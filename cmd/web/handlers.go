@@ -20,7 +20,8 @@ type templateData struct {
 	Fan2          string `json:"fan2"`
 	DoorStatus    string `json:"doorStatus"`
 	PttStatus     string `json:"pttStatus"`
-	tempThreshold string `json:"tempThreshold"`
+	airThreshold  string `json:"airThreshold"`
+	sinkThreshold string `json"sinkThreshold"`
 	Peep          bool
 }
 
@@ -53,7 +54,7 @@ func (app *application) updateMonitor(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	td.tempThreshold = fmt.Sprintf("0.3%f", app.tempThreshold)
+	td.airThreshold = fmt.Sprintf("0.3%f", app.airThreshold)
 	b, err := json.Marshal(td)
 	if err != nil {
 		app.serverError(w, err)
