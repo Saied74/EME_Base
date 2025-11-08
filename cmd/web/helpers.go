@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"image/color"
 	"io"
+	"math"
 	//"log"
 	"net"
 	"net/http"
@@ -204,8 +205,10 @@ func (app *application) getRemote(q string) (*templateData, error) {
 			case "sinkTemp":
 				td.SinkTemp = pair[1]
 			case "ampPower":
+				//fmt.Println("Amp Power: ", pair[1])
 				td.AmpPower = pair[1]
 			case "refPower":
+				//fmt.Println("Ref Power: ", pair[1])
 				td.RefPower = pair[1]
 			case "fan1Curr":
 				td.Fan1 = pair[1]
@@ -234,6 +237,10 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	ampPower *= app.powerFactor
+	ampPower = 16.376 * math.Pow(ampPower, 3) - 237.54 * math.Pow(ampPower, 2) + 1210.0 * ampPower - 1955.0
+	if ampPower < 0.0 {
+		ampPower = 1
+	}
 	td.AmpPower = fmt.Sprintf("%0.2f", ampPower)
 
 	refPower, err := strconv.ParseFloat(td.RefPower, 64)
@@ -242,12 +249,20 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		return td, nil
 	}
 	refPower *= app.powerFactor
+	refPower = 16.376 * math.Pow(refPower, 3) - 237.54 * math.Pow(refPower, 2) + 1210.0 * refPower - 1955.0
+	if refPower < 0.0 {
+		refPower = 1
+	}
+
 	td.RefPower = fmt.Sprintf("%0.2f", refPower)
 	//if refPower < 2 {
 	//	refPower = 2
 	//}
 	g := refPower / ampPower
 	swr := (1 + g) / (1 - g)
+	if swr == math.Inf(1) || swr == math.Inf(-1) {
+		swr = 0
+	}
 	td.SWR = fmt.Sprintf("%0.2f", swr)
 
 	sinkTemp, err := strconv.ParseFloat(td.SinkTemp, 64)
@@ -301,7 +316,7 @@ func (app *application) adjust() error {
 		return err
 	}
 
-	app.powerFactor = (config.PlusFive / config.MaxAtoD) * (config.MaxPower / config.MaxPowerIndicator)
+	app.powerFactor = 2.0 * (config.PlusFive / config.MaxAtoD)// * (config.MaxPower / config.MaxPowerIndicator)
 	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 	app.airFactor = config.AirFactor
 	app.sinkFactor = config.SinkFactor
