@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"io"
 	"math"
+
 	//"log"
 	"net"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 )
 
 const (
-	remoteAddress        = "192.168.6.97" //"192.168.4.72" //TODO: need to change it to a server name
+	remoteAddress     = "192.168.4.98" //"192.168.4.72"
 	absZero           = 273.15         //per Lord Kelvin
 	calTemp           = 25.0           //per TI datasheet
 	calVoltage        = 2.982          //per TI datasheet
@@ -124,12 +125,15 @@ func (app *application) getRemote(q string) (*templateData, error) {
 	client := &http.Client{
 		Timeout: 1 * time.Second,
 	}
-	// TODO: replace remote address with server name
-	//better yet, make the server name or IP address a command line flag
-	url := fmt.Sprintf("http://%s/?q=%s", app.remoteAddress, q)
+	remoteAddress := app.remoteAddress1
+	if app.dish == int(2) {
+		remoteAddress = app.remoteAddress2
+	}
+	url := fmt.Sprintf("http://%s/?q=%s", remoteAddress, q)
 	response, err := client.Get(url)
 	for i := 0; i < retries && err != nil; i++ {
 		response, err = client.Get(url)
+		//fmt.Println(url, response)
 	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -234,10 +238,10 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	ampPower, err := strconv.ParseFloat(td.AmpPower, 64)
 	if err != nil {
 		td.Msg = "Amp power from the far end was not a number"
-		return td, nil
+		//	return td, nil
 	}
 	ampPower *= app.powerFactor
-	ampPower = 16.376 * math.Pow(ampPower, 3) - 237.54 * math.Pow(ampPower, 2) + 1210.0 * ampPower - 1955.0
+	ampPower = 16.376*math.Pow(ampPower, 3) - 237.54*math.Pow(ampPower, 2) + 1210.0*ampPower - 1955.0
 	if ampPower < 0.0 {
 		ampPower = 1
 	}
@@ -246,15 +250,18 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	refPower, err := strconv.ParseFloat(td.RefPower, 64)
 	if err != nil {
 		td.Msg = "Reflected power from the far end was not a number"
-		return td, nil
+		//return td, nil
 	}
 	refPower *= app.powerFactor
-	refPower = 16.376 * math.Pow(refPower, 3) - 237.54 * math.Pow(refPower, 2) + 1210.0 * refPower - 1955.0
+	refPower = 16.376*math.Pow(refPower, 3) - 237.54*math.Pow(refPower, 2) + 1210.0*refPower - 1955.0
 	if refPower < 0.0 {
 		refPower = 1
 	}
-
-	td.RefPower = fmt.Sprintf("%0.2f", refPower)
+	if app.dish == int(2) {
+		td.RefPower = fmt.Sprintf("%0.2f", refPower)
+	} else {
+		td.RefPower = "0"
+	}
 	//if refPower < 2 {
 	//	refPower = 2
 	//}
@@ -263,12 +270,15 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	if swr == math.Inf(1) || swr == math.Inf(-1) {
 		swr = 0
 	}
-	td.SWR = fmt.Sprintf("%0.2f", swr)
-
+	if app.dish == int(1) {
+		td.SWR = "N/A"
+	} else {
+		td.SWR = fmt.Sprintf("%0.2f", swr)
+	}
 	sinkTemp, err := strconv.ParseFloat(td.SinkTemp, 64)
 	if err != nil {
 		td.Msg = "Heatsink temperature from the far end was not a number"
-		return td, nil
+		//	return td, nil
 	}
 	sinkTemp = sinkTemp*app.tempFactor*app.sinkFactor - absZero
 	if sinkTemp > app.sinkThreshold {
@@ -282,7 +292,7 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	airTemp, err := strconv.ParseFloat(td.AirTemp, 64)
 	if err != nil {
 		td.Msg = "Air temperature from the far end was not a number"
-		return td, nil
+		//	return td, nil
 	}
 	airTemp = airTemp*app.tempFactor*app.airFactor - absZero
 	if airTemp > app.airThreshold {
@@ -316,14 +326,15 @@ func (app *application) adjust() error {
 		return err
 	}
 
-	app.powerFactor = 2.0 * (config.PlusFive / config.MaxAtoD)// * (config.MaxPower / config.MaxPowerIndicator)
+	app.powerFactor = 2.0 * (config.PlusFive / config.MaxAtoD) // * (config.MaxPower / config.MaxPowerIndicator)
 	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 	app.airFactor = config.AirFactor
 	app.sinkFactor = config.SinkFactor
 	app.airThreshold = config.AirThreshold
-	fmt.Println("SinkThreshold: ", config.SinkThreshold)
+	//fmt.Println("SinkThreshold: ", config.SinkThreshold)
 	app.sinkThreshold = config.SinkThreshold
-	app.remoteAddress = config.RemoteAddress
+	app.remoteAddress1 = config.RemoteAddress1
+	app.remoteAddress2 = config.RemoteAddress2
 	if app.debugOption {
 		fmt.Printf("<-----------Adjustment values---------------->\n")
 		fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
@@ -341,7 +352,8 @@ func (app *application) adjust() error {
 		fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
 		fmt.Printf("Air Temperature Threshold: %0.3f\n", app.airThreshold)
 		fmt.Printf("Heatsink Temperature Threshold: %0.3f\n", app.sinkThreshold)
-		fmt.Printf("Remote Address: %s\n", app.remoteAddress)
+		fmt.Printf("Remote Address1: %s\n", app.remoteAddress1)
+		fmt.Printf("Remote Address2: %s\n", app.remoteAddress2)
 	}
 	return nil
 }
@@ -367,6 +379,7 @@ func (app *application) updateBoundSensors() error {
 	if err != nil {
 		return err
 	}
+	//fmt.Println("xxxx", td.AirTemp, td.SinkTemp)
 
 	if err == nil && td.Msg == "" {
 		td, err = app.processSensors(td)

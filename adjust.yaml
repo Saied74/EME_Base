@@ -8,9 +8,10 @@
    maxAtoD: 1023.0
    maxPower: 1000.0
    maxPowerIndicator: 5.0
-   airThreshold: 30.0
+   airThreshold: 50.0
    sinkThreshold: 50.0
-   remoteAddress: 192.168.1.212
+   remoteAddress1: 192.168.4.112
+   remoteAddress2: 192.168.4.122
 ...   
    
    

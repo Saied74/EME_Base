@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 const pingCount = 50
@@ -23,16 +24,18 @@ type application struct {
 	tempFactor  float64
 	//multiply by A/D output and airFactor then subtract absolute zero to get air temparture
 	//multiply by A/D output and sinkFactor then subtract absolute zero to get sink temparture
-	airFactor     float64
-	sinkFactor    float64
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	debugOption   bool
-	templateCache map[string]*template.Template
-	airThreshold  float64
-	sinkThreshold float64
-	remoteOn      bool
-	remoteAddress string
+	airFactor      float64
+	sinkFactor     float64
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	debugOption    bool
+	templateCache  map[string]*template.Template
+	airThreshold   float64
+	sinkThreshold  float64
+	remoteOn       bool
+	remoteAddress1 string
+	remoteAddress2 string
+	dish           int //1 = 3m dish, 2 = 15' dish
 }
 
 type configType struct {
@@ -47,7 +50,8 @@ type configType struct {
 	MaxPowerIndicator float64 `yaml:"maxPowerIndicator"`
 	AirThreshold      float64 `yaml:"airThreshold"`
 	SinkThreshold     float64 `yaml:"sinkThreshold"`
-	RemoteAddress string `yaml:"remoteAddress"`
+	RemoteAddress1    string  `yaml:"remoteAddress1"`
+	RemoteAddress2    string  `yaml:"remoteAddress2"`
 }
 
 func main() {
@@ -60,7 +64,10 @@ func main() {
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.LUTC|log.Llongfile)
 
 	//note, this requires the run command be issues from the project base
-	templateCache, err := newTemplateCache("./ui/html/")
+	emePath := os.Getenv("EMEPATH")
+	cachePath := filepath.Join(emePath, "ui/html/")
+
+	templateCache, err := newTemplateCache(cachePath)
 	if err != nil {
 		errorLog.Fatal(err)
 	}
@@ -77,7 +84,8 @@ func main() {
 		airThreshold:  airTempThreshold, //small window turns read above this threshold
 		sinkThreshold: sinkTempThreshold,
 		remoteOn:      false,
-		remoteAddress: remoteAddress,
+		dish:          1,
+		//remoteAddress: remoteAddress,
 	}
 	err = app.adjust()
 	if err != nil {
@@ -99,7 +107,8 @@ func main() {
 		ErrorLog: errorLog,
 		Handler:  mux,
 	}
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	staticPath := filepath.Join(emePath, "ui/static/")
+	fileServer := http.FileServer(http.Dir(staticPath))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	infoLog.Printf("starting server on :4000")
 	go srv.ListenAndServe()

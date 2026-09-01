@@ -138,7 +138,13 @@ func (app *application) little() {
 	}()
 
 	onText := turnOn
-	calText := "Recalibrate"
+
+	dish1 := "On 3m dish - Recal"
+	dish2 := "on 15ft dish - Recal"
+	calText := dish1
+	if app.dish == int(2) {
+		calText = dish2
+	}
 	a := ap.New()
 	w := a.NewWindow("Remote Statistics")
 	dvra, err := fyne.LoadResourceFromPath("ui/static/img/dvra.jpeg")
@@ -183,9 +189,17 @@ func (app *application) little() {
 			app.remoteOn = true
 		}
 	})
-
-	calButton := widget.NewButton(calText, func() {
+	var calButton *widget.Button
+	calButton = widget.NewButton(calText, func() {
 		app.adjust()
+		if app.dish == int(1) {
+			app.dish = int(2)
+			calButton.Text = dish2
+		} else {
+			app.dish = int(1)
+			calButton.Text = dish1
+		}
+
 	})
 
 	row2 := container.New(layout.NewGridLayout(3), row2Col1, row2Col2, row2Col3)
