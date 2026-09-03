@@ -114,13 +114,15 @@ func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
+var timeout int
+
 var remoteClient = &http.Client{
 	Transport: &http.Transport{
 		DisableKeepAlives:   true,
 		MaxIdleConns:        1,
 		MaxIdleConnsPerHost: 1,
 	},
-	Timeout: 500 * time.Millisecond,
+	Timeout: time.Duration(timeout) * time.Millisecond,
 }
 
 //<++++++++++++++++++++++   Query head end   +++++++++++++++++++++++++++>
@@ -131,18 +133,8 @@ var remoteClient = &http.Client{
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
 
-	//client := &http.Client{
-	//	Transport: &http.Transport{
-	//		DisableKeepAlives: true,
-	//	},
-	//	Timeout: 500 * time.Millisecond,
-	//}
 	url := fmt.Sprintf("http://%s/?q=%s", app.remoteAddress, q)
 	response, err := remoteClient.Get(url)
-	//for i := 0; i < retries && err != nil; i++ {
-	//	response, err = lient.Get(url)
-	//fmt.Println(url, response)
-	//}
 	for i := 0; i < retries && err != nil; i++ {
 		if response != nil && response.Body != nil {
 			response.Body.Close()

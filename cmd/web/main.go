@@ -58,6 +58,7 @@ func main() {
 
 	optionDebug := flag.Bool("d", false, "true turns on debug option")
 	dishChoice := flag.Int("dish", 1, "1 for 3m 2 for 15' dish")
+	timeOut := flag.Int("timeout", 500, "https timeout in milliseconds")
 	flag.Parse()
 
 	if !(*dishChoice == 1 || *dishChoice == 2) {
@@ -76,6 +77,7 @@ func main() {
 	if err != nil {
 		errorLog.Fatal(err)
 	}
+	timeout = *timeOut
 
 	app := &application{
 		powerFactor:   (plusFive / maxAtoD) * (maxPower / maxPowerIndicator),     //for converting A/D reads into power
