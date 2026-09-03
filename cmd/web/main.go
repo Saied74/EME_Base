@@ -24,18 +24,17 @@ type application struct {
 	tempFactor  float64
 	//multiply by A/D output and airFactor then subtract absolute zero to get air temparture
 	//multiply by A/D output and sinkFactor then subtract absolute zero to get sink temparture
-	airFactor      float64
-	sinkFactor     float64
-	errorLog       *log.Logger
-	infoLog        *log.Logger
-	debugOption    bool
-	templateCache  map[string]*template.Template
-	airThreshold   float64
-	sinkThreshold  float64
-	remoteOn       bool
-	remoteAddress1 string
-	remoteAddress2 string
-	dish           int //1 = 3m dish, 2 = 15' dish
+	airFactor     float64
+	sinkFactor    float64
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	debugOption   bool
+	templateCache map[string]*template.Template
+	airThreshold  float64
+	sinkThreshold float64
+	remoteOn      bool
+	remoteAddress string
+	dish          int //1 = 3m dish, 2 = 15' dish
 }
 
 type configType struct {
@@ -58,7 +57,13 @@ func main() {
 	var err error
 
 	optionDebug := flag.Bool("d", false, "true turns on debug option")
+	dishChoice := flag.Int("dish", 1, "1 for 3m 2 for 15' dish")
 	flag.Parse()
+
+	if !(*dishChoice == 1 || *dishChoice == 2) {
+		fmt.Printf("%d\t%T\n", *dishChoice, *dishChoice)
+		log.Fatal("Dish choices are 1 or 2")
+	}
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.LUTC)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.LUTC|log.Llongfile)
@@ -84,7 +89,7 @@ func main() {
 		airThreshold:  airTempThreshold, //small window turns read above this threshold
 		sinkThreshold: sinkTempThreshold,
 		remoteOn:      false,
-		dish:          1,
+		dish:          *dishChoice,
 		//remoteAddress: remoteAddress,
 	}
 	err = app.adjust()

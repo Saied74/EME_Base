@@ -114,6 +114,15 @@ func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
+var remoteClient = &http.Client{
+	Transport: &http.Transport{
+		DisableKeepAlives:   true,
+		MaxIdleConns:        1,
+		MaxIdleConnsPerHost: 1,
+	},
+	Timeout: 500 * time.Millisecond,
+}
+
 //<++++++++++++++++++++++   Query head end   +++++++++++++++++++++++++++>
 
 // Makes an HTTP call to the far end with the parameter given.  In most cases,
@@ -122,18 +131,23 @@ func (app *application) notFound(w http.ResponseWriter) {
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
 
-	client := &http.Client{
-		Timeout: 1 * time.Second,
-	}
-	remoteAddress := app.remoteAddress1
-	if app.dish == int(2) {
-		remoteAddress = app.remoteAddress2
-	}
-	url := fmt.Sprintf("http://%s/?q=%s", remoteAddress, q)
-	response, err := client.Get(url)
+	//client := &http.Client{
+	//	Transport: &http.Transport{
+	//		DisableKeepAlives: true,
+	//	},
+	//	Timeout: 500 * time.Millisecond,
+	//}
+	url := fmt.Sprintf("http://%s/?q=%s", app.remoteAddress, q)
+	response, err := remoteClient.Get(url)
+	//for i := 0; i < retries && err != nil; i++ {
+	//	response, err = lient.Get(url)
+	//fmt.Println(url, response)
+	//}
 	for i := 0; i < retries && err != nil; i++ {
-		response, err = client.Get(url)
-		//fmt.Println(url, response)
+		if response != nil && response.Body != nil {
+			response.Body.Close()
+		}
+		response, err = remoteClient.Get(url)
 	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -228,6 +242,9 @@ func (app *application) getRemote(q string) (*templateData, error) {
 		td.NoConnection = "false"
 		td.Msg = ""
 	}
+	time.Sleep(200 * time.Millisecond)
+	remoteClient.CloseIdleConnections()
+
 	return td, nil
 }
 
@@ -333,8 +350,10 @@ func (app *application) adjust() error {
 	app.airThreshold = config.AirThreshold
 	//fmt.Println("SinkThreshold: ", config.SinkThreshold)
 	app.sinkThreshold = config.SinkThreshold
-	app.remoteAddress1 = config.RemoteAddress1
-	app.remoteAddress2 = config.RemoteAddress2
+	app.remoteAddress = config.RemoteAddress1
+	if app.dish == int(2) {
+		app.remoteAddress = config.RemoteAddress2
+	}
 	if app.debugOption {
 		fmt.Printf("<-----------Adjustment values---------------->\n")
 		fmt.Printf("Absolute Zero: %0.2f\n", config.AbsZero)
@@ -352,8 +371,7 @@ func (app *application) adjust() error {
 		fmt.Printf("Sink Factor: %0.3f\n", app.sinkFactor)
 		fmt.Printf("Air Temperature Threshold: %0.3f\n", app.airThreshold)
 		fmt.Printf("Heatsink Temperature Threshold: %0.3f\n", app.sinkThreshold)
-		fmt.Printf("Remote Address1: %s\n", app.remoteAddress1)
-		fmt.Printf("Remote Address2: %s\n", app.remoteAddress2)
+		fmt.Printf("Remote Address1: %s\n", app.remoteAddress)
 	}
 	return nil
 }

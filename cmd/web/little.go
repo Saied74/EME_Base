@@ -138,15 +138,13 @@ func (app *application) little() {
 	}()
 
 	onText := turnOn
-
-	dish1 := "On 3m dish - Recal"
-	dish2 := "on 15ft dish - Recal"
-	calText := dish1
-	if app.dish == int(2) {
-		calText = dish2
+	calText := "Adjust"
+	windowTitle := "3m Dish Stats"
+	if app.dish == 2 {
+		windowTitle = "15' Dish Stats"
 	}
 	a := ap.New()
-	w := a.NewWindow("Remote Statistics")
+	w := a.NewWindow(windowTitle)
 	dvra, err := fyne.LoadResourceFromPath("ui/static/img/dvra.jpeg")
 	if err != nil {
 		log.Fatal(err)
@@ -192,14 +190,6 @@ func (app *application) little() {
 	var calButton *widget.Button
 	calButton = widget.NewButton(calText, func() {
 		app.adjust()
-		if app.dish == int(1) {
-			app.dish = int(2)
-			calButton.Text = dish2
-		} else {
-			app.dish = int(1)
-			calButton.Text = dish1
-		}
-
 	})
 
 	row2 := container.New(layout.NewGridLayout(3), row2Col1, row2Col2, row2Col3)
