@@ -5,10 +5,10 @@ Earth Moon Earth Base Station
 - The remote sensor just reads the A/D voltage and sends it to the base station
 - Max range on the remote A/D is 8 bits or 1023
 - Reference voltage into the A/D is 4.99 volts precision reference LM335
-- At the base station, the raw number is convertaed to a voltage
+- At the base station, the raw number is converted to a voltage
 
 
-$$V_o = \frac{4.99}{1023} * remote-sensor-read &nbsp&nbsp (2)$$
+$$V_o = \frac{4.99}{1023} * remote-sensor-read &nbsp;&nbsp; (1)$$
 
 - Temperature sensor is referenced to zero degrees Kelvin (-273 deg C)
 - Sensor output voltage at 298 deg K (25 deg C) is 2.98 volts
@@ -20,7 +20,7 @@ $$2.98 = 0.01 * 298 + b$$
 - Hence b = 0 and:
 
 
-$$T = \frac{V_o}{0.01} = 100 * V_o &nbsp&nbsp (2)$$
+$$T = \frac{V_o}{0.01} = 100 * V_o &nbsp;&nbsp; (2)$$
 
 - Combining equations (1) and (2):
 
