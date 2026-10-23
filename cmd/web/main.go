@@ -20,12 +20,11 @@ const pingCount = 50
 
 // for injecting data into handlers
 type application struct {
-	powerFactor float64 //multiply by A/D output to get the power
-	tempFactor  float64
-	//multiply by A/D output and airFactor then subtract absolute zero to get air temparture
-	//multiply by A/D output and sinkFactor then subtract absolute zero to get sink temparture
-	airFactor     float64
-	sinkFactor    float64
+	voltageFactor float64 //multiply remote sensor read to get voltage value
+	powerFactor   float64 //no longer used
+	tempFactor    float64 //multiply the voltage to get temperature
+	airFactor     float64 //set to 1.0, useless
+	sinkFactor    float64 //set to 1.0, useless
 	errorLog      *log.Logger
 	infoLog       *log.Logger
 	debugOption   bool
@@ -79,9 +78,12 @@ func main() {
 	}
 	timeout = *timeOut
 
+	fmt.Printf("Timeout: %d, Dish: %d\n", timeout, *dishChoice)
+
 	app := &application{
-		powerFactor:   (plusFive / maxAtoD) * (maxPower / maxPowerIndicator),     //for converting A/D reads into power
-		tempFactor:    (plusFive / maxAtoD) * ((calTemp + absZero) / calVoltage), //for converting A/D reads to deg K
+		voltageFactor: (plusFive / maxAtoD),                                  //for converting remote-sensor-read to voltage
+		powerFactor:   (plusFive / maxAtoD) * (maxPower / maxPowerIndicator), //for converting A/D reads into power
+		tempFactor:    (plusFive / maxAtoD) * 100.0,                          //for converting voltage reads to deg C
 		airFactor:     airFactor,
 		sinkFactor:    sinkFactor,
 		errorLog:      errorLog,
@@ -98,16 +100,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	for i := 0; i < pingCount; i++ {
-		_, err = app.getRemote("p")
-		if err == nil {
-			fmt.Println("Count", i)
-			break
+	fmt.Printf("read and processed adjust Dish: %s\n", app.remoteAddress)
+	/*
+		for i := 0; i < pingCount; i++ {
+			_, err = app.getRemote("p")
+			if err == nil {
+				fmt.Println("Count", i)
+				break
+			}
 		}
-	}
-	fmt.Println(err)
-
+		fmt.Println(err)
+	*/
 	mux := app.routes()
 	srv := &http.Server{
 		Addr:     ":4000",

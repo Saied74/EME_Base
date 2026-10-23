@@ -5,6 +5,7 @@
 *.so
 *.dylib
 *.swp
+*.swo
 eme
 .DS_Store
 

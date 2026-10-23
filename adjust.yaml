@@ -1,13 +1,13 @@
 ---
-   absZero: 273.15
+   absZero: 273
    calTemp: 25.0
    calVoltage: 2.982
    airFactor: 1.0000
    sinkFactor: 1.0000
-   plusFive: 5.00
+   plusFive: 4.99
    maxAtoD: 1023.0
-   maxPower: 1000.0
-   maxPowerIndicator: 5.0
+   maxPower: 1341.0
+   maxPowerIndicator: 5.02
    airThreshold: 50.0
    sinkThreshold: 50.0
    remoteAddress1: 192.168.1.112

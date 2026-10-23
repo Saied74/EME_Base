@@ -27,16 +27,16 @@ import (
 )
 
 const (
-	remoteAddress     = "192.168.4.98" //"192.168.4.72"
-	absZero           = 273.15         //per Lord Kelvin
+	remoteAddress     = "192.168.1.98" //"192.168.4.72"
+	absZero           = 273            //per Lord Kelvin
 	calTemp           = 25.0           //per TI datasheet
-	calVoltage        = 2.982          //per TI datasheet
-	airFactor         = 1.002          //correction factor for air temperature sensor relative to thermocouple
-	sinkFactor        = 1.007          //correction factor for the heatsink temperature sensor relative to thermocouple
-	plusFive          = 4.94           //Arduino Nano measured reference voltage.
+	calVoltage        = 2.98           //per TI datasheet
+	airFactor         = 1.000          //correction factor for air temperature sensor relative to thermocouple
+	sinkFactor        = 1.000          //correction factor for the heatsink temperature sensor relative to thermocouple
+	plusFive          = 4.99           //Arduino Nano measured reference voltage.
 	maxAtoD           = 1023.0         //10 bits all ones.
-	maxPower          = 1000.0         //assumed
-	maxPowerIndicator = 5.0            //assumed
+	maxPower          = 1341.0         //assumed
+	maxPowerIndicator = 5.02           //assumed
 	//tempThreshold     = 50.0           //threshold at which user will be warned
 	retries = 10
 	//ampThreshold := 66.0; //votage value for 66 degrees C temperature
@@ -132,15 +132,17 @@ var remoteClient = &http.Client{
 // return data is raw A/D convertor data
 func (app *application) getRemote(q string) (*templateData, error) {
 	td := &templateData{}
-
+	//fmt.Println("into getRemote")
 	url := fmt.Sprintf("http://%s/?q=%s", app.remoteAddress, q)
 	response, err := remoteClient.Get(url)
+	//fmt.Println("return from remoteClinet.Get")
 	for i := 0; i < retries && err != nil; i++ {
 		if response != nil && response.Body != nil {
 			response.Body.Close()
 		}
 		response, err = remoteClient.Get(url)
 	}
+	//fmt.Println("Error is: ", err)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			app.errorLog.Printf("%v", err)
@@ -244,25 +246,27 @@ func (app *application) getRemote(q string) (*templateData, error) {
 // See the Adjustments page for details.
 func (app *application) processSensors(td *templateData) (*templateData, error) {
 
-	ampPower, err := strconv.ParseFloat(td.AmpPower, 64)
+	ampVoltage, err := strconv.ParseFloat(td.AmpPower, 64)
 	if err != nil {
 		td.Msg = "Amp power from the far end was not a number"
 		//	return td, nil
 	}
-	ampPower *= app.powerFactor
-	ampPower = 16.376*math.Pow(ampPower, 3) - 237.54*math.Pow(ampPower, 2) + 1210.0*ampPower - 1955.0
+	ampVoltage *= app.voltageFactor
+	ampPower := -(3.0e-6)*(ampVoltage*ampVoltage) + 0.0081*ampVoltage + 1.3066
+	//ampPower = 16.376*math.Pow(ampPower, 3) - 237.54*math.Pow(ampPower, 2) + 1210.0*ampPower - 1955.0
 	if ampPower < 0.0 {
 		ampPower = 1
 	}
 	td.AmpPower = fmt.Sprintf("%0.2f", ampPower)
 
-	refPower, err := strconv.ParseFloat(td.RefPower, 64)
+	refVoltage, err := strconv.ParseFloat(td.RefPower, 64)
 	if err != nil {
 		td.Msg = "Reflected power from the far end was not a number"
 		//return td, nil
 	}
-	refPower *= app.powerFactor
-	refPower = 16.376*math.Pow(refPower, 3) - 237.54*math.Pow(refPower, 2) + 1210.0*refPower - 1955.0
+	refVoltage *= app.voltageFactor
+	refPower := -(3.0e-6)*(refVoltage*refVoltage) + 0.0081*refVoltage + 1.3066
+	//refPower = 16.376*math.Pow(refPower, 3) - 237.54*math.Pow(refPower, 2) + 1210.0*refPower - 1955.0
 	if refPower < 0.0 {
 		refPower = 1
 	}
@@ -335,8 +339,9 @@ func (app *application) adjust() error {
 		return err
 	}
 
-	app.powerFactor = 2.0 * (config.PlusFive / config.MaxAtoD) // * (config.MaxPower / config.MaxPowerIndicator)
-	app.tempFactor = (config.PlusFive / config.MaxAtoD) * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
+	app.voltageFactor = config.PlusFive / config.MaxAtoD
+	//app.powerFactor = 2.0 * (config.PlusFive / config.MaxAtoD) // * (config.MaxPower / config.MaxPowerIndicator)
+	app.tempFactor = app.voltageFactor * ((config.CalTemp + config.AbsZero) / config.CalVoltage)
 	app.airFactor = config.AirFactor
 	app.sinkFactor = config.SinkFactor
 	app.airThreshold = config.AirThreshold
