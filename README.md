@@ -7,7 +7,7 @@ Earth Moon Earth Base Station
 - Reference voltage into the A/D is 4.99 volts precision reference LM335
 - At the base station, the raw number is convertaed to a voltage
 
-$$V_o = \frac{4.99}{1023} * remote-sensor-read \quad \tag{1}$$
+$$V_o = \frac{4.99}{1023} * remote-sensor-read \tag{1}$$
 
 - Temperature sensor is referenced to zero degrees Kelvin (-273 deg C)
 - Sensor output voltage at 298 deg K (25 deg C) is 2.98 volts
@@ -18,7 +18,7 @@ $$2.98 = 0.01 * 298 + b$$
 
 - Hence b = 0 and:
 
-$$T = \frac{V_o}{0.01} = 100 * V_o \quad \tag{2}$$
+$$T = \frac{V_o}{0.01} = 100 * V_o \tag{2}$$
 
 - Combining equations (1) and (2):
 
@@ -36,7 +36,7 @@ $$T = \frac{499}{1023} * remote_sensor_read$$
 - Curve fitting to a second order polynomial, we get the following
 - I am not using zero intercept because it results in very odd data
 
-$$O_o = -3.0e^{-6}V_o^{2}+0.0081V_o+1.3066\quad \tag {3}$$
+$$O_o = -3.0e^{-6}V_o^{2}+0.0081V_o+1.3066 \tag {3}$$
 
 - Where $V_o$ is obtained from quaition (1)
 
