@@ -252,8 +252,9 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		//	return td, nil
 	}
 	ampVoltage *= app.voltageFactor
-	ampPower := -(3.0e-6)*(ampVoltage*ampVoltage) + 0.0081*ampVoltage + 1.3066
-	//ampPower = 16.376*math.Pow(ampPower, 3) - 237.54*math.Pow(ampPower, 2) + 1210.0*ampPower - 1955.0
+
+	ampPower := -32.082*math.Pow(ampVoltage, 4) + 158.23*math.Pow(ampVoltage, 3) -
+		142.96*math.Pow(ampVoltage, 2) + 139.22*ampVoltage
 	if ampPower < 0.0 {
 		ampPower = 1
 	}
@@ -265,8 +266,12 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 		//return td, nil
 	}
 	refVoltage *= app.voltageFactor
-	refPower := -(3.0e-6)*(refVoltage*refVoltage) + 0.0081*refVoltage + 1.3066
-	//refPower = 16.376*math.Pow(refPower, 3) - 237.54*math.Pow(refPower, 2) + 1210.0*refPower - 1955.0
+
+	fmt.Printf("refPower read: %s\trefVoltage: %0.2f\n", td.RefPower, refVoltage)
+
+	refPower := -32.082*math.Pow(refVoltage, 4) + 158.23*math.Pow(refVoltage, 3) -
+		142.96*math.Pow(refVoltage, 2) + 139.22*refVoltage
+
 	if refPower < 0.0 {
 		refPower = 1
 	}
@@ -275,9 +280,6 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	} else {
 		td.RefPower = "0"
 	}
-	//if refPower < 2 {
-	//	refPower = 2
-	//}
 	g := refPower / ampPower
 	swr := (1 + g) / (1 - g)
 	if swr == math.Inf(1) || swr == math.Inf(-1) {

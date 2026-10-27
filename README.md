@@ -38,7 +38,7 @@ $$T = \frac{499}{1023} * remote-sensor-read$$
 - Curve fitting to a second order polynomial, we get the following
 - I am not using zero intercept because it results in very odd data
 
-$$O_o = -3.0e^{-6}V_o^{2}+0.0081V_o+1.3066$$
+$$P_o = -32.082 * V_o^4 + 158.23 * V_o^3 - 142.96 * V_o^2 + 139.22 * V_0$$
 
 - Where $V_o$ is obtained from quaition (1)
 
