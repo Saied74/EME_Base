@@ -267,7 +267,7 @@ func (app *application) processSensors(td *templateData) (*templateData, error) 
 	}
 	refVoltage *= app.voltageFactor
 
-	fmt.Printf("refPower read: %s\trefVoltage: %0.2f\n", td.RefPower, refVoltage)
+	//fmt.Printf("refPower read: %s\trefVoltage: %0.2f\n", td.RefPower, refVoltage)
 
 	refPower := -32.082*math.Pow(refVoltage, 4) + 158.23*math.Pow(refVoltage, 3) -
 		142.96*math.Pow(refVoltage, 2) + 139.22*refVoltage
